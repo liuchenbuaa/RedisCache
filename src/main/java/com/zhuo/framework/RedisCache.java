@@ -7,6 +7,8 @@ import redis.clients.jedis.JedisPoolConfig;
 
 import java.io.*;
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Created by liuchen on 18/1/18.
@@ -19,13 +21,43 @@ public class RedisCache {
         this.jedisPool = jedisPool;
     }
 
+    private static Set<Class<?>> simpleClasses = new HashSet<Class<?>>(){{
+        add(Boolean.class);
+        add(Short.class);
+        add(Integer.class);
+        add(Long.class);
+        add(Float.class);
+        add(Double.class);
+        add(String.class);
+    }};
+
     /**
      * 这几种类型是不需要编码的
      * @param clazz
      * @return
      */
     private static boolean isSimpleInstance(Class<?> clazz){
-        return clazz == String.class|| clazz.isPrimitive();
+        return simpleClasses.contains(clazz);
+    }
+
+
+    private static Object castToType(String val, Class<?> clazz){
+        if(clazz == String.class){
+            return val;
+        }else if(clazz == Integer.class){
+            return Integer.parseInt(val);
+        }else if(clazz == Boolean.class){
+            return Boolean.parseBoolean(val);
+        }else if(clazz == Long.class){
+            return Long.parseLong(val);
+        }else if(clazz == Double.class){
+            return Double.parseDouble(val);
+        }else if(clazz == Short.class){
+            return Short.parseShort(val);
+        }else if(clazz == Float.class){
+            return Float.parseFloat(val);
+        }
+        return val;
     }
 
     /**
@@ -56,7 +88,7 @@ public class RedisCache {
      */
     private static Object deSerializeString(String val,Class<?> clazz) throws IOException, ClassNotFoundException,ClassCastException{
         if(isSimpleInstance(clazz)){
-            return clazz.cast(val);
+            return castToType(val,clazz);
         }else{
             byte[] data = Base64.decodeBase64(val);
             ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(data);
